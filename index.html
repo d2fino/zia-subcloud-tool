@@ -626,11 +626,11 @@ function hideCorsHelp() {
 }
 
 // ── CENR LIVE CHECK ───────────────────────────────────────────────────────────
-// When deployed on Vercel (or any server), use the local proxy route to avoid
-// browser CORS restrictions. When opened as a local file, try the direct URL.
+// When deployed, serve the static cenr.json cached by the GitHub Action (no CORS, fast CDN).
+// When opened as a local file, try the live URL directly.
 const CENR_URL = window.location.protocol === 'file:'
   ? 'https://config.zscaler.com/zscaler.net/cenr'
-  : '/api/cenr';
+  : '/cenr.json';
 
 // Extract DC short code from vpn or hostname string
 function extractCode(s) {
