@@ -626,7 +626,11 @@ function hideCorsHelp() {
 }
 
 // ── CENR LIVE CHECK ───────────────────────────────────────────────────────────
-const CENR_URL = 'https://config.zscaler.com/zscaler.net/cenr';
+// When deployed on Vercel (or any server), use the local proxy route to avoid
+// browser CORS restrictions. When opened as a local file, try the direct URL.
+const CENR_URL = window.location.protocol === 'file:'
+  ? 'https://config.zscaler.com/zscaler.net/cenr'
+  : '/api/cenr';
 
 // Extract DC short code from vpn or hostname string
 function extractCode(s) {
