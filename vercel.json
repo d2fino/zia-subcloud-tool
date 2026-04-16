@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/cenr.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
