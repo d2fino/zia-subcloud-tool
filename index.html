@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Subcloud vs CENR — zscaler.net</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0c1120;color:#e2e8f0;padding:24px 20px;min-height:100vh}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.logo{background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;padding:8px 13px;font-weight:800;font-size:17px;flex-shrink:0}
+.header-text h1{font-size:18px;font-weight:700;color:#f1f5f9}
+.header-text p{font-size:11.5px;color:#64748b;margin-top:2px}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{cursor:pointer;border:none;border-radius:7px;padding:6px 13px;font-size:12px;font-weight:600;transition:.15s}
+.btn-lang{background:#1e3a5f;color:#93c5fd;border:1px solid #2d4e7a}
+.btn-lang:hover{background:#1d4ed8;color:#fff}
+.btn-har{background:#0d2a18;color:#34d399;border:1px solid #065f46;display:flex;align-items:center;gap:6px}
+.btn-har:hover{background:#047857;color:#fff}
+.btn-har input{display:none}
+.btn-cenr{background:#1a1035;color:#c4b5fd;border:1px solid #4c1d95;display:flex;align-items:center;gap:6px}
+.btn-cenr:hover{background:#7c3aed;color:#fff}
+.btn-cenr.spin span.spin-icon{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── CENR PANEL ── */
+.cenr-panel{background:#0e0a1a;border:1px solid #4c1d95;border-radius:10px;padding:12px 16px;margin-bottom:18px;display:none}
+.cenr-panel.visible{display:block}
+.cenr-panel h3{font-size:13px;font-weight:600;color:#c4b5fd;margin-bottom:8px}
+.cenr-ok  {background:#0a0a1a;border-left:3px solid #34d399;padding:6px 10px;border-radius:6px;font-size:12px;color:#34d399;margin-bottom:6px}
+.cenr-warn{background:#160b00;border-left:3px solid #fbbf24;padding:6px 10px;border-radius:6px;font-size:12px;color:#fbbf24;margin-bottom:6px}
+.cenr-err {background:#1a0505;border-left:3px solid #f87171;padding:6px 10px;border-radius:6px;font-size:12px;color:#f87171;margin-bottom:6px}
+.cenr-diff{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.cenr-diff-box{background:#0c0c1e;border:1px solid #1e1e4a;border-radius:7px;padding:8px 12px;flex:1;min-width:200px}
+.cenr-diff-box h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.cenr-diff-box ul{list-style:none;padding:0;margin:0;font-size:11px;line-height:1.9}
+.cenr-diff-box .tag-new{color:#34d399}.cenr-diff-box .tag-rem{color:#f87171}
+.s-new{background:#030f08;color:#34d399;border:1px solid #065f46;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap;margin-left:3px}
+.s-rem{background:#1a0505;color:#f87171;border:1px solid #7f1d1d;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap;margin-left:3px}
+.cenr-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.dot-ok{background:#34d399}.dot-warn{background:#fbbf24}.dot-err{background:#f87171}.dot-spin{background:#a78bfa;animation:blink .8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── HAR PANEL ── */
+.har-panel{background:#0a1a0a;border:1px dashed #065f46;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:none}
+.har-panel.visible{display:block}
+.har-panel h3{font-size:13px;font-weight:600;color:#34d399;margin-bottom:6px}
+.har-panel p{font-size:12px;color:#64748b;line-height:1.6;margin-bottom:10px}
+.har-drop{border:2px dashed #065f46;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:.15s;background:#0c1f0c}
+.har-drop:hover,.har-drop.drag{border-color:#34d399;background:#0d2a18}
+.har-drop p{font-size:12px;color:#4b7a4b;margin:0}
+.har-drop .icon{font-size:28px;margin-bottom:6px}
+.har-status{margin-top:10px;font-size:12px;padding:6px 12px;border-radius:6px;display:none}
+.har-ok  {background:#052e16;color:#34d399;border:1px solid #065f46}
+.har-err {background:#2d0505;color:#f87171;border:1px solid #7f1d1d}
+.har-info{background:#0c1e35;color:#93c5fd;border:1px solid #1e3a5f}
+.har-warn{background:#1a1000;color:#fbbf24;border:1px solid #78350f}
+
+/* ── OR DIVIDER ── */
+.or-div{display:flex;align-items:center;gap:8px;margin:12px 0;color:#334155;font-size:11px;font-weight:600;text-transform:uppercase}
+.or-div::before,.or-div::after{content:'';flex:1;border-top:1px solid #1e3a5f}
+
+/* ── LIVE API BUTTON ── */
+.btn-live{background:#0f2340;color:#93c5fd;border:1px solid #1e3a5f;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s}
+.btn-live:hover{background:#1e40af;color:#fff;border-color:#3b82f6}
+.btn-live:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── PASTE AREA ── */
+.paste-section{display:none}
+.paste-section.visible{display:block}
+.paste-area{width:100%;min-height:80px;background:#0c1120;border:1px solid #1e3a5f;border-radius:7px;color:#cbd5e1;font-family:'Courier New',monospace;font-size:11px;padding:8px 10px;resize:vertical;outline:none;margin-top:6px}
+.paste-area::placeholder{color:#334155}
+.btn-paste-apply{background:#0d2a18;color:#34d399;border:1px solid #065f46;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;transition:.15s}
+.btn-paste-apply:hover{background:#047857;color:#fff}
+
+/* ── CORS HELP BOX ── */
+.cors-help{background:#0f1e3a;border:1px solid #1e3a5f;border-left:3px solid #fbbf24;border-radius:7px;padding:10px 14px;margin-top:10px;font-size:11.5px;color:#94a3b8;line-height:1.7;display:none}
+.cors-help.visible{display:block}
+.cors-help strong{color:#fbbf24}
+.cors-help code{background:#1a1500;color:#fbbf24;padding:1px 5px;border-radius:3px;font-size:10.5px}
+.cors-help ol{padding-left:18px;margin-top:4px}
+.cors-help ol li{margin-bottom:3px}
+
+/* ── STATS ── */
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.sc{background:#151f35;border:1px solid #1e3a5f;border-radius:9px;padding:11px 16px;flex:1;min-width:110px}
+.sc .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#475569;margin-bottom:3px}
+.sc .val{font-size:24px;font-weight:700}
+.c-bl{color:#38bdf8}.c-gr{color:#34d399}.c-re{color:#f87171}.c-ye{color:#fbbf24}.c-pu{color:#a78bfa}.c-or{color:#fb923c}
+
+/* ── NOTE ── */
+.note{background:#111d30;border:1px solid #1e3a5f;border-left:3px solid #3b82f6;border-radius:8px;padding:9px 13px;margin-bottom:16px;font-size:11.5px;color:#94a3b8;line-height:1.6}
+.note strong{color:#60a5fa}
+
+/* ── CONTROLS ── */
+.controls{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.lbl-c{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+button.fb{cursor:pointer;border:none;border-radius:6px;padding:5px 12px;font-size:11.5px;font-weight:600;transition:.15s;opacity:.75}
+button.fb:hover,button.fb.active{opacity:1}
+.f-all {background:#1e3a5f;color:#93c5fd}.f-all.active{background:#1d4ed8;color:#fff}
+.f-eme {background:#0d2a1a;color:#86efac}.f-eme.active{background:#15803d;color:#fff}
+.f-ame {background:#0c1e35;color:#7dd3fc}.f-ame.active{background:#1e40af;color:#fff}
+.f-apa {background:#1a0f2e;color:#c4b5fd}.f-apa.active{background:#7c3aed;color:#fff}
+.f-sub {background:#052e16;color:#34d399}.f-sub.active{background:#047857;color:#fff}
+.f-out {background:#2d0000;color:#f87171}.f-out.active{background:#b91c1c;color:#fff}
+.f-sur {background:#2a1500;color:#fb923c}.f-sur.active{background:#c2410c;color:#fff}
+.srch{margin-left:auto;background:#151f35;border:1px solid #1e3a5f;border-radius:6px;padding:5px 11px;color:#cbd5e1;font-size:11.5px;outline:none;width:180px}
+.srch::placeholder{color:#475569}
+
+/* ── TABLE ── */
+.tw{border-radius:9px;overflow:hidden;border:1px solid #1e3a5f}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#0f1e3a;color:#64748b;text-align:left;padding:8px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1e3a5f;white-space:nowrap}
+tbody tr{border-bottom:1px solid #101828;transition:background .1s}
+tbody tr:hover{background:#111d30}
+tbody tr.hidden{display:none}
+td{padding:8px 11px;vertical-align:middle}
+.num{color:#334155;font-size:10.5px}
+
+.city-name{font-weight:600;color:#e2e8f0;font-size:12.5px}
+.dc-code{font-family:'Courier New',monospace;color:#fbbf24;font-size:10.5px;background:#1a1500;padding:1px 6px;border-radius:4px;margin-left:5px}
+.host{font-family:'Courier New',monospace;color:#67e8f9;font-size:10.5px}
+.gre {font-family:'Courier New',monospace;color:#a5b4fc;font-size:10.5px}
+.cnt{background:#1a2a3a;color:#94a3b8;padding:1px 6px;border-radius:4px;font-size:10.5px;font-family:monospace}
+.dash{color:#334155}
+
+.rb{display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700}
+.rb-EMEA    {background:#0a2010;color:#86efac;border:1px solid #14532d}
+.rb-Americas{background:#0c1825;color:#7dd3fc;border:1px solid #1e3a5f}
+.rb-APAC    {background:#160f28;color:#c4b5fd;border:1px solid #4c1d95}
+
+.s-in {background:#042a18;color:#34d399;border:1px solid #065f46;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.s-out{background:#2d0505;color:#f87171;border:1px solid #7f1d1d;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.s-sur{background:#2a1000;color:#fb923c;border:1px solid #92400e;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap;margin-left:3px}
+.excl{background:#1a1000;color:#fbbf24;border:1px solid #78350f;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:3px}
+
+.footer{margin-top:24px;text-align:center;font-size:10.5px;color:#334155}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ZS</div>
+  <div class="header-text">
+    <h1 id="h-title">Subcloud d2fino — 66 / 100 Data Centers</h1>
+    <p id="h-sub">Datos reales de <code>zsapi/v1/subclouds</code> · zscaler.net · Tenant 2fino.com</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-cenr" id="btn-cenr" onclick="checkCENR(true)">
+      <span class="spin-icon" id="cenr-spin-icon">🌐</span>
+      <span id="cenr-btn-lbl">Verificar CENR</span>
+      <span class="cenr-dot dot-spin" id="cenr-dot" style="display:none"></span>
+    </button>
+    <label class="btn btn-har" id="har-toggle-btn" onclick="toggleHarPanel(event)">
+      <span>📂</span><span id="har-btn-lbl">Cargar HAR</span>
+    </label>
+    <button class="btn btn-lang" onclick="toggleLang()" id="lang-btn">🌐 English</button>
+  </div>
+</header>
+
+<!-- CENR Live Check Panel -->
+<div class="cenr-panel" id="cenr-panel">
+  <h3 id="cp-title">🌐 Estado CENR — config.zscaler.com/zscaler.net/cenr</h3>
+  <div id="cenr-msg"></div>
+  <div class="cenr-diff" id="cenr-diff" style="display:none">
+    <div class="cenr-diff-box">
+      <h4 id="cp-new-hdr" style="color:#34d399">🆕 Nuevos en CENR</h4>
+      <ul id="cenr-new-list"></ul>
+    </div>
+    <div class="cenr-diff-box">
+      <h4 id="cp-rem-hdr" style="color:#f87171">🗑 Eliminados del CENR</h4>
+      <ul id="cenr-rem-list"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- HAR Upload Panel -->
+<div class="har-panel" id="har-panel">
+  <h3 id="hp-title">🔄 Actualizar subcloud desde HAR</h3>
+  <p id="hp-desc">Exporta un HAR desde el portal ZIA (<strong>Administration → Subclouds</strong>), luego arrástralo aquí. Si el HAR no contiene <code>/zsapi/v1/subclouds</code>, se intentará la llamada en vivo usando tu sesión activa del navegador.</p>
+
+  <!-- Drop zone -->
+  <div class="har-drop" id="har-drop"
+       ondragover="event.preventDefault();this.classList.add('drag')"
+       ondragleave="this.classList.remove('drag')"
+       ondrop="handleDrop(event)"
+       onclick="document.getElementById('har-file').click()">
+    <div class="icon">📋</div>
+    <p id="hp-drop">Arrastra tu .har aquí o haz clic para seleccionar</p>
+    <input type="file" id="har-file" accept=".har" onchange="handleFile(this.files[0])"/>
+  </div>
+
+  <!-- Or: Live API button -->
+  <div class="or-div" id="or1">— <span id="hp-or1">o</span> —</div>
+  <button class="btn-live" id="btn-live" onclick="tryLiveApi()">
+    <span>🔴</span><span id="hp-live-lbl">Llamar API en vivo (requiere sesión activa de ZIA)</span>
+  </button>
+
+  <!-- Or: Paste JSON -->
+  <div class="or-div" id="or2">— <span id="hp-or2">o</span> —</div>
+  <div class="paste-section" id="paste-section">
+    <p id="hp-paste-title" style="color:#94a3b8;margin-bottom:4px">📋 Pega aquí la respuesta JSON de <code style="color:#fbbf24">/zsapi/v1/subclouds</code>:</p>
+    <textarea class="paste-area" id="paste-area" placeholder='[{"id":1,"name":"d2fino","dcs":[...],"exclusions":[...]}]'></textarea>
+    <br><button class="btn-paste-apply" onclick="applyPastedJson()" id="hp-paste-btn">Aplicar JSON</button>
+  </div>
+  <div class="paste-section" id="paste-section-always" style="display:block">
+    <p id="hp-paste-title2" style="color:#64748b;font-size:11.5px;margin-top:8px;margin-bottom:4px">📋 <span id="hp-paste-hint">O pega directamente la respuesta JSON de <code style="color:#fbbf24">/zsapi/v1/subclouds</code>:</span></p>
+    <textarea class="paste-area" id="paste-area2" placeholder='[{"id":1,"name":"d2fino","dcs":[...],"exclusions":[...]}]' style="min-height:60px"></textarea>
+    <br><button class="btn-paste-apply" onclick="applyPastedJson2()" id="hp-paste-btn2">Aplicar</button>
+  </div>
+
+  <!-- CORS help box (shown on CORS failure) -->
+  <div class="cors-help" id="cors-help">
+    <strong>⚠️ CORS bloqueó la llamada directa.</strong> El navegador impide leer la respuesta de <code>admin.zscaler.net</code> desde una página diferente.<br>
+    <strong id="ch-alt">Alternativa rápida:</strong>
+    <ol id="ch-steps">
+      <li>Abre el portal ZIA en esta misma ventana del navegador</li>
+      <li>Abre DevTools → Network → busca <code>subclouds</code></li>
+      <li>Haz click derecho → "Copy Response" y pégalo arriba</li>
+      <li>O exporta el HAR <em>después</em> de visitar Administration → Subclouds</li>
+    </ol>
+  </div>
+
+  <div class="har-status" id="har-status"></div>
+</div>
+
+<div class="note" id="note-box">
+  <strong id="n1">✅ Datos reales:</strong> <span id="n2">Subcloud <strong>d2fino</strong> confirmada vía <code>zsapi/v1/subclouds</code> (extraído del HAR). <strong>66 DCs asignados</strong> de 100 disponibles en zscaler.net. Los <strong>34 fuera del subcloud</strong> son principalmente nodos "II/III/IV/V" secundarios y algunos nodos China/APAC. Los <strong>💰 Regional Surcharge</strong> son DCs con cargo adicional (India, China, África, Oriente Medio, LatAm, Oceanía remota).</span>
+</div>
+
+<div class="stats" id="stats-row"></div>
+
+<div class="controls">
+  <span class="lbl-c" id="lbl-filter">Filtrar:</span>
+  <button class="fb f-all active" onclick="filt('all',this)"      id="b-all">Todos</button>
+  <button class="fb f-eme"        onclick="filt('EMEA',this)"     id="b-eme">🌍 EMEA</button>
+  <button class="fb f-ame"        onclick="filt('Americas',this)" id="b-ame">🌎 Américas</button>
+  <button class="fb f-apa"        onclick="filt('APAC',this)"     id="b-apa">🌏 APAC</button>
+  <button class="fb f-sub"        onclick="filt('insub',this)"    id="b-sub">✅ En subcloud</button>
+  <button class="fb f-out"        onclick="filt('outsub',this)"   id="b-out">❌ Fuera subcloud</button>
+  <button class="fb f-sur"        onclick="filt('surcharge',this)" id="b-sur">💰 Regional Surcharge</button>
+  <input class="srch" id="srch" placeholder="Buscar ciudad, código…" oninput="doSearch()"/>
+</div>
+
+<div class="tw">
+<table>
+  <thead>
+    <tr>
+      <th class="num">#</th>
+      <th id="th-dc">Data Center</th>
+      <th id="th-cont">Continente</th>
+      <th id="th-host">Hostname</th>
+      <th id="th-gre">GRE IP</th>
+      <th id="th-pfx">Prefijos</th>
+      <th id="th-status">Estado</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<div class="footer">Cloud: <strong>zscaler.net</strong> · Subcloud: <strong>d2fino</strong> · <span id="gdate"></span></div>
+
+<script>
+// ── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const T = {
+  es:{
+    title:'Subcloud d2fino — 66 / 100 Data Centers',
+    sub:'Datos reales de zsapi/v1/subclouds · zscaler.net · Tenant 2fino.com',
+    note_strong:'✅ Datos reales:',
+    note_body:'Subcloud <strong>d2fino</strong> confirmada vía <code>zsapi/v1/subclouds</code> (extraído del HAR). <strong>66 DCs asignados</strong> de 100 disponibles en zscaler.net. Los <strong>34 fuera del subcloud</strong> son principalmente nodos "II/III/IV/V" secundarios y algunos nodos China/APAC. Los <strong>💰 Regional Surcharge</strong> son DCs con cargo adicional (India, China, África, Oriente Medio, LatAm, Oceanía remota).',
+    lbl_filter:'Filtrar:',
+    b_all:'Todos',b_eme:'🌍 EMEA',b_ame:'🌎 Américas',b_apa:'🌏 APAC',
+    b_sub:'✅ En subcloud',b_out:'❌ Fuera subcloud',b_sur:'💰 Regional Surcharge',
+    s_total:'Total', s_in:'En subcloud', s_out:'Fuera', s_sur:'Surcharge',
+    s_eme:'EMEA', s_ame:'Américas', s_apa:'APAC',
+    th_dc:'Data Center',th_cont:'Continente',th_host:'Hostname',
+    th_gre:'GRE IP',th_pfx:'Prefijos',th_status:'Estado',
+    in_sub:'✅ Subcloud',out_sub:'❌ Fuera',surcharge:'💰 Surcharge',
+    excl:'⚠️ Excluido',
+    lang_btn:'🌐 English', srch_ph:'Buscar ciudad, código…',
+    gen:'Generado el',
+    hp_title:'🔄 Actualizar subcloud desde HAR',
+    hp_desc:'Exporta un HAR desde el portal ZIA (<strong>Administration → Subclouds</strong>), luego arrástralo aquí. Si el HAR no contiene <code>/zsapi/v1/subclouds</code>, se intentará la llamada en vivo usando tu sesión activa del navegador.',
+    hp_drop:'Arrastra tu .har aquí o haz clic para seleccionar',
+    hp_or1:'o', hp_or2:'o',
+    hp_live_lbl:'Llamar API en vivo (requiere sesión activa de ZIA)',
+    hp_live_trying:'⏳ Intentando llamada en vivo a /zsapi/v1/subclouds…',
+    hp_paste_title:'📋 Pega aquí la respuesta JSON de',
+    hp_paste_hint:'O pega directamente la respuesta JSON de',
+    hp_paste_btn:'Aplicar JSON', hp_paste_btn2:'Aplicar',
+    ch_alt:'Alternativa rápida:',
+    ch_steps:'<li>Abre el portal ZIA en esta misma ventana del navegador</li><li>Abre DevTools → Network → busca <code>subclouds</code></li><li>Haz clic derecho sobre la petición → "Copy Response" y pégalo arriba</li><li>O exporta el HAR <em>después</em> de visitar Administration → Subclouds</li>',
+    har_btn:'Cargar HAR',
+    har_ok:'✅ Subcloud actualizada:',
+    har_ok_live:'✅ Subcloud obtenida en vivo:',
+    har_err:'❌ No se encontró /subclouds en el HAR. Intentando llamada en vivo…',
+    har_err_cors:'⚠️ CORS bloqueó la llamada directa. Usa el cuadro de pegado o exporta un HAR correcto.',
+    har_err_json:'❌ JSON inválido. Verifica que hayas pegado la respuesta completa de /zsapi/v1/subclouds.',
+    har_err_live:'❌ La llamada en vivo falló. Usa el cuadro de pegado (ver instrucciones abajo).',
+    har_cors_help:'⚠️ CORS bloqueó la llamada directa. El navegador impide leer la respuesta de admin.zscaler.net desde esta página. Usa el cuadro de pegado.',
+    cors_alt:'Alternativa rápida:',
+    cors_steps:'<li>Abre el portal ZIA en esta misma ventana del navegador</li><li>Abre DevTools → Network → busca <code>subclouds</code></li><li>Haz clic derecho sobre la petición → "Copy Response" y pégalo arriba</li><li>O exporta el HAR <em>después</em> de visitar Administration → Subclouds</li>',
+    cenr_btn:'Verificar CENR',
+    cp_title:'🌐 Estado CENR — config.zscaler.com/zscaler.net/cenr',
+    cp_checking:'⏳ Consultando config.zscaler.com…',
+    cp_ok_nochange:'✅ CENR actualizado — sin cambios detectados. ',
+    cp_ok_changes:'⚠️ Se detectaron cambios en CENR:',
+    cp_err_cors:'⚠️ CORS bloqueó el acceso a config.zscaler.com. El CENR es público, pero el navegador bloquea la llamada desde esta página. Prefijos actualizados con datos locales.',
+    cp_err_net:'❌ No se pudo alcanzar config.zscaler.com.',
+    cp_new_hdr:'🆕 Nuevos en CENR',
+    cp_rem_hdr:'🗑 Eliminados del CENR',
+    cp_pfx_updated:'prefijos actualizados.',
+    cp_dcs:'DCs en CENR',
+  },
+  en:{
+    title:'Subcloud d2fino — 66 / 100 Data Centers',
+    sub:'Live data from zsapi/v1/subclouds · zscaler.net · Tenant 2fino.com',
+    note_strong:'✅ Real data:',
+    note_body:'Subcloud <strong>d2fino</strong> confirmed via <code>zsapi/v1/subclouds</code> (extracted from HAR). <strong>66 DCs assigned</strong> out of 100 available in zscaler.net. The <strong>34 outside the subcloud</strong> are mainly secondary "II/III/IV/V" nodes and some China/APAC nodes. <strong>💰 Regional Surcharge</strong> DCs incur additional charges (India, China, Africa, Middle East, LatAm, remote Oceania).',
+    lbl_filter:'Filter:',
+    b_all:'All',b_eme:'🌍 EMEA',b_ame:'🌎 Americas',b_apa:'🌏 APAC',
+    b_sub:'✅ In subcloud',b_out:'❌ Outside subcloud',b_sur:'💰 Regional Surcharge',
+    s_total:'Total', s_in:'In subcloud', s_out:'Outside', s_sur:'Surcharge',
+    s_eme:'EMEA', s_ame:'Americas', s_apa:'APAC',
+    th_dc:'Data Center',th_cont:'Continent',th_host:'Hostname',
+    th_gre:'GRE IP',th_pfx:'Prefixes',th_status:'Status',
+    in_sub:'✅ Subcloud',out_sub:'❌ Outside',surcharge:'💰 Surcharge',
+    excl:'⚠️ Excluded',
+    lang_btn:'🌐 Español', srch_ph:'Search city, code…',
+    gen:'Generated on',
+    hp_title:'🔄 Update subcloud from HAR',
+    hp_desc:'Export a HAR from the ZIA portal (<strong>Administration → Subclouds</strong>), then drag it here. If the HAR does not contain <code>/zsapi/v1/subclouds</code>, a live API call will be attempted using your active browser session.',
+    hp_drop:'Drag your .har here or click to select',
+    hp_or1:'or', hp_or2:'or',
+    hp_live_lbl:'Live API call (requires active ZIA browser session)',
+    hp_live_trying:'⏳ Attempting live call to /zsapi/v1/subclouds…',
+    hp_paste_title:'📋 Paste the JSON response from',
+    hp_paste_hint:'Or paste the JSON response from',
+    hp_paste_btn:'Apply JSON', hp_paste_btn2:'Apply',
+    ch_alt:'Quick alternative:',
+    ch_steps:'<li>Open the ZIA admin portal in this same browser window</li><li>Open DevTools → Network → filter for <code>subclouds</code></li><li>Right-click the request → "Copy Response" and paste it above</li><li>Or export the HAR <em>after</em> visiting Administration → Subclouds</li>',
+    har_btn:'Load HAR',
+    har_ok:'✅ Subcloud updated:',
+    har_ok_live:'✅ Subcloud fetched live:',
+    har_err:'❌ No /subclouds found in the HAR. Attempting live API call…',
+    har_err_cors:'⚠️ CORS blocked the direct call. Use the paste box or export a correct HAR.',
+    har_err_json:'❌ Invalid JSON. Make sure you pasted the full response from /zsapi/v1/subclouds.',
+    har_err_live:'❌ Live call failed. Use the paste box (see instructions below).',
+    har_cors_help:'⚠️ CORS blocked the direct API call. The browser prevents reading the response from admin.zscaler.net from this page. Use the paste box below.',
+    cors_alt:'Quick alternative:',
+    cors_steps:'<li>Open the ZIA admin portal in this same browser window</li><li>Open DevTools → Network → filter for <code>subclouds</code></li><li>Right-click the request → "Copy Response" and paste it above</li><li>Or export the HAR <em>after</em> visiting Administration → Subclouds</li>',
+    cenr_btn:'Check CENR',
+    cp_title:'🌐 CENR Status — config.zscaler.com/zscaler.net/cenr',
+    cp_checking:'⏳ Fetching config.zscaler.com…',
+    cp_ok_nochange:'✅ CENR is up to date — no changes detected. ',
+    cp_ok_changes:'⚠️ Changes detected in CENR:',
+    cp_err_cors:'⚠️ CORS blocked access to config.zscaler.com. The CENR is public, but the browser blocks the call from this page. Prefix counts updated from local data.',
+    cp_err_net:'❌ Could not reach config.zscaler.com.',
+    cp_new_hdr:'🆕 New in CENR',
+    cp_rem_hdr:'🗑 Removed from CENR',
+    cp_pfx_updated:'prefixes updated.',
+    cp_dcs:'DCs in CENR',
+  }
+};
+let lang = 'es';
+
+// ── DC CODE → hostname prefix map (for HAR matching) ─────────────────────────
+// Each DC in DCS has a .code field (e.g. "AMS2") used to match against HAR DC codes
+// HAR gives us short codes like "AMS2", "FRA4", etc.
+
+// ── DATASET (100 DCs, real subcloud from HAR) ─────────────────────────────────
+// Exclusion from HAR: WAS1 had an expired exclusion
+const EXCLUSIONS = new Set(['WAS1']);
+
+const DCS = [
+{"c":"EMEA","city":"Abu Dhabi II","code":"","vpn":"","gre":"","host":"","pfx":6,"sur":true,"inSub":false},
+{"c":"EMEA","city":"Amsterdam II","code":"AMS2","vpn":"ams2-2-vpn.zscaler.net","gre":"185.46.212.32","host":"ams2.sme.zscaler.net","pfx":15,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Amsterdam III","code":"","vpn":"ams3-vpn.zscaler.net","gre":"87.58.118.20","host":"ams3.sme.zscaler.net","pfx":15,"sur":false,"inSub":false},
+{"c":"EMEA","city":"Brussels II","code":"BRU2","vpn":"bru2-vpn.zscaler.net","gre":"165.225.12.12","host":"bru2.sme.zscaler.net","pfx":12,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Capetown IV","code":"CPT4","vpn":"cpt4-vpn.zscaler.net","gre":"136.226.216.12","host":"cpt4.sme.zscaler.net","pfx":3,"sur":true,"inSub":true},
+{"c":"EMEA","city":"Copenhagen II","code":"CPH2","vpn":"cph2-vpn.zscaler.net","gre":"165.225.194.12","host":"cph2.sme.zscaler.net","pfx":10,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Dubai I","code":"DXB1","vpn":"dxb1-vpn.zscaler.net","gre":"147.161.160.12","host":"dxb1.sme.zscaler.net","pfx":7,"sur":true,"inSub":true},
+{"c":"EMEA","city":"Dusseldorf I","code":"DUS1","vpn":"dus1-vpn.zscaler.net","gre":"147.161.226.20","host":"dus1.sme.zscaler.net","pfx":13,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Frankfurt IV","code":"FRA4","vpn":"fra4-2-vpn.zscaler.net","gre":"165.225.72.32","host":"fra4-2.sme.zscaler.net","pfx":18,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Frankfurt VI","code":"FRA6","vpn":"fra6-vpn.zscaler.net","gre":"147.161.134.20","host":"fra6.sme.zscaler.net","pfx":17,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Helsinki I","code":"HEL1","vpn":"hel1-vpn.zscaler.net","gre":"147.161.186.12","host":"hel1.sme.zscaler.net","pfx":10,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Johannesburg III","code":"JNB3","vpn":"jnb3-vpn.zscaler.net","gre":"147.161.162.12","host":"jnb3.sme.zscaler.net","pfx":4,"sur":true,"inSub":true},
+{"c":"EMEA","city":"Kingdom of Saudi Arabia I","code":"","vpn":"ksa1-vpn.zscaler.net","gre":"103.215.126.8","host":"ksa1.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"EMEA","city":"Lagos II","code":"LOS2","vpn":"los2-vpn.zscaler.net","gre":"154.113.23.10","host":"los2.sme.zscaler.net","pfx":1,"sur":true,"inSub":true},
+{"c":"EMEA","city":"Lagos III","code":"","vpn":"los3-vpn.zscaler.net","gre":"87.58.72.20","host":"los3.sme.zscaler.net","pfx":4,"sur":true,"inSub":false},
+{"c":"EMEA","city":"Lisbon I","code":"","vpn":"lis1-vpn.zscaler.net","gre":"87.58.94.12","host":"lis1.sme.zscaler.net","pfx":11,"sur":false,"inSub":false},
+{"c":"EMEA","city":"London III","code":"LON3","vpn":"lon3-vpn.zscaler.net","gre":"165.225.80.32","host":"lon3.sme.zscaler.net","pfx":13,"sur":false,"inSub":true},
+{"c":"EMEA","city":"London V","code":"LON5","vpn":"lon5-vpn.zscaler.net","gre":"147.161.140.20","host":"lon5.sme.zscaler.net","pfx":19,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Madrid III","code":"MAD3","vpn":"Mad3-vpn.zscaler.net","gre":"165.225.92.12","host":"Mad3.sme.zscaler.net","pfx":13,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Madrid IV","code":"","vpn":"mad4-vpn.zscaler.net","gre":"87.58.84.20","host":"mad4.sme.zscaler.net","pfx":13,"sur":false,"inSub":false},
+{"c":"EMEA","city":"Manchester I","code":"MAN1","vpn":"Man1-vpn.zscaler.net","gre":"165.225.196.12","host":"Man1.sme.zscaler.net","pfx":15,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Manchester II","code":"","vpn":"man2-vpn.zscaler.net","gre":"194.9.106.20","host":"man2.sme.zscaler.net","pfx":15,"sur":false,"inSub":false},
+{"c":"EMEA","city":"Marseille I","code":"MRS1","vpn":"mrs1-vpn.zscaler.net","gre":"147.161.178.20","host":"mrs1.sme.zscaler.net","pfx":13,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Milan III","code":"MIL3","vpn":"mil3-vpn.zscaler.net","gre":"165.225.202.12","host":"mil3.sme.zscaler.net","pfx":13,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Milan IV","code":"","vpn":"","gre":"","host":"","pfx":17,"sur":false,"inSub":false},
+{"c":"EMEA","city":"Munich I","code":"MUC1","vpn":"muc1-vpn.zscaler.net","gre":"147.161.176.20","host":"muc1.sme.zscaler.net","pfx":15,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Oslo III","code":"OSL3","vpn":"osl3-vpn.zscaler.net","gre":"147.161.146.12","host":"osl3.sme.zscaler.net","pfx":9,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Paris II","code":"PAR2","vpn":"par2-2-vpn.zscaler.net","gre":"165.225.20.12","host":"par2.sme.zscaler.net","pfx":15,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Paris IV","code":"","vpn":"par4-vpn.zscaler.net","gre":"194.9.96.20","host":"par4.sme.zscaler.net","pfx":15,"sur":false,"inSub":false},
+{"c":"EMEA","city":"Rouen I","code":"URO1","vpn":"uro1-vpn.zscaler.net","gre":"165.225.204.12","host":"uro1.sme.zscaler.net","pfx":9,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Stockholm III","code":"STO3","vpn":"sto3-vpn.zscaler.net","gre":"165.225.192.12","host":"sto3.sme.zscaler.net","pfx":12,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Tel Aviv II","code":"TLV2","vpn":"tlv2-vpn.zscaler.net","gre":"87.58.78.20","host":"tlv2.sme.zscaler.net","pfx":4,"sur":true,"inSub":true},
+{"c":"EMEA","city":"Vienna I","code":"VIE1","vpn":"vie1-vpn.zscaler.net","gre":"165.225.200.12","host":"vie1.sme.zscaler.net","pfx":14,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Warsaw II","code":"WAW2","vpn":"waw2-vpn.zscaler.net","gre":"165.225.206.12","host":"waw2.sme.zscaler.net","pfx":14,"sur":false,"inSub":true},
+{"c":"EMEA","city":"Zurich","code":"ZRH1","vpn":"zrh1-2-vpn.zscaler.net","gre":"165.225.94.12","host":"zrh1-2.sme.zscaler.net","pfx":16,"sur":false,"inSub":true},
+{"c":"Americas","city":"Atlanta II","code":"ATL2","vpn":"atl2-vpn.zscaler.net","gre":"104.129.204.32","host":"atl2.sme.zscaler.net","pfx":9,"sur":false,"inSub":true},
+{"c":"Americas","city":"Atlanta III","code":"","vpn":"atl3-vpn.zscaler.net","gre":"170.85.128.20","host":"atl3.sme.zscaler.net","pfx":16,"sur":false,"inSub":false},
+{"c":"Americas","city":"Bogota I","code":"BOG1","vpn":"bog1-vpn.zscaler.net","gre":"98.98.186.4","host":"bog1.sme.zscaler.net","pfx":2,"sur":true,"inSub":true},
+{"c":"Americas","city":"Bogota II","code":"","vpn":"","gre":"","host":"","pfx":8,"sur":true,"inSub":false},
+{"c":"Americas","city":"Boston I","code":"BOS1","vpn":"bos1-vpn.zscaler.net","gre":"136.226.70.20","host":"bos1.sme.zscaler.net","pfx":11,"sur":false,"inSub":true},
+{"c":"Americas","city":"Buenos Aires I","code":"BUE1","vpn":"bue1-vpn.zscaler.net","gre":"98.98.27.8","host":"bue1.sme.zscaler.net","pfx":2,"sur":true,"inSub":true},
+{"c":"Americas","city":"Chicago","code":"CHI1","vpn":"chi1-vpn.zscaler.net","gre":"104.129.196.32","host":"chi1-2.sme.zscaler.net","pfx":15,"sur":false,"inSub":true},
+{"c":"Americas","city":"Chicago II","code":"CHI2","vpn":"chi2-vpn.zscaler.net","gre":"170.85.6.13","host":"chi2.sme.zscaler.net","pfx":12,"sur":false,"inSub":true},
+{"c":"Americas","city":"Dallas I","code":"DFW1","vpn":"dfw1-2-vpn.zscaler.net","gre":"165.225.216.12","host":"dfw1-2.sme.zscaler.net","pfx":9,"sur":false,"inSub":true},
+{"c":"Americas","city":"Dallas II","code":"","vpn":"dfw2-vpn.zscaler.net","gre":"170.85.96.20","host":"dfw2.sme.zscaler.net","pfx":8,"sur":false,"inSub":false},
+{"c":"Americas","city":"Denver III","code":"DEN3","vpn":"den3-vpn.zscaler.net","gre":"165.225.10.12","host":"den3.sme.zscaler.net","pfx":7,"sur":false,"inSub":true},
+{"c":"Americas","city":"Los Angeles","code":"QLA1","vpn":"qla1-vpn.zscaler.net","gre":"104.129.198.32","host":"qla1.sme.zscaler.net","pfx":7,"sur":false,"inSub":true},
+{"c":"Americas","city":"Los Angeles II","code":"","vpn":"qla2-vpn.zscaler.net","gre":"170.85.230.20","host":"qla2.sme.zscaler.net","pfx":10,"sur":false,"inSub":false},
+{"c":"Americas","city":"Mexico City I","code":"MEX1","vpn":"mex1-vpn.zscaler.net","gre":"136.226.0.12","host":"mex1.sme.zscaler.net","pfx":7,"sur":true,"inSub":true},
+{"c":"Americas","city":"Mexico City II","code":"","vpn":"","gre":"","host":"","pfx":10,"sur":true,"inSub":false},
+{"c":"Americas","city":"Miami III","code":"MIA3","vpn":"mia3-vpn.zscaler.net","gre":"165.225.222.12","host":"mia3.sme.zscaler.net","pfx":7,"sur":false,"inSub":true},
+{"c":"Americas","city":"Miami IV","code":"","vpn":"","gre":"","host":"","pfx":12,"sur":false,"inSub":false},
+{"c":"Americas","city":"Montreal I","code":"YMQ1","vpn":"ymq1-vpn.zscaler.net","gre":"165.225.212.12","host":"ymq1.sme.zscaler.net","pfx":5,"sur":false,"inSub":true},
+{"c":"Americas","city":"New York III","code":"NYC3","vpn":"nyc3-vpn.zscaler.net","gre":"165.225.38.36","host":"nyc3.sme.zscaler.net","pfx":9,"sur":false,"inSub":true},
+{"c":"Americas","city":"New York IV","code":"NYC4","vpn":"nyc4-vpn.zscaler.net","gre":"170.85.68.20","host":"nyc4.sme.zscaler.net","pfx":12,"sur":false,"inSub":true},
+{"c":"Americas","city":"Nuevo Laredo I","code":"NLD1","vpn":"nld1-vpn.zscaler.net","gre":"165.225.218.12","host":"nld1.sme.zscaler.net","pfx":3,"sur":true,"inSub":true},
+{"c":"Americas","city":"Rio de Janeiro I","code":"RIO1","vpn":"rio1-vpn.zscaler.net","gre":"170.85.16.20","host":"rio1.sme.zscaler.net","pfx":6,"sur":true,"inSub":true},
+{"c":"Americas","city":"San Francisco IV","code":"SJC4","vpn":"sjc4-2-vpn.zscaler.net","gre":"165.225.242.12","host":"sjc4-2.sme.zscaler.net","pfx":12,"sur":false,"inSub":true},
+{"c":"Americas","city":"Santiago I","code":"SCL1","vpn":"scl1-2-vpn.zscaler.net","gre":"98.98.169.4","host":"scl1-2.sme.zscaler.net","pfx":2,"sur":true,"inSub":true},
+{"c":"Americas","city":"Santiago II","code":"","vpn":"scl2-vpn.zscaler.net","gre":"205.220.0.20","host":"scl2.sme.zscaler.net","pfx":8,"sur":true,"inSub":false},
+{"c":"Americas","city":"Sao Paulo","code":"","vpn":"saopaulo2-vpn.zscaler.net","gre":"64.215.22.32","host":"sao2.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"Americas","city":"Sao Paulo II","code":"","vpn":"sao2-2-vpn.zscaler.net","gre":"165.225.214.16","host":"sao2-2.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"Americas","city":"Sao Paulo IV","code":"SAO4","vpn":"sao4-vpn.zscaler.net","gre":"147.161.128.12","host":"sao4.sme.zscaler.net","pfx":7,"sur":true,"inSub":true},
+{"c":"Americas","city":"Seattle","code":"SEA1","vpn":"sea1-vpn.zscaler.net","gre":"165.225.50.8","host":"sea1.sme.zscaler.net","pfx":8,"sur":false,"inSub":true},
+{"c":"Americas","city":"Toronto III","code":"YTO3","vpn":"yto3-vpn.zscaler.net","gre":"165.225.208.12","host":"yto3.sme.zscaler.net","pfx":5,"sur":false,"inSub":true},
+{"c":"Americas","city":"Vancouver I","code":"YVR1","vpn":"yvr1-vpn.zscaler.net","gre":"165.225.210.12","host":"yvr1.sme.zscaler.net","pfx":5,"sur":false,"inSub":true},
+{"c":"Americas","city":"Washington DC","code":"WAS1","vpn":"was1-2-vpn.zscaler.net","gre":"104.129.194.32","host":"was1.sme.zscaler.net","pfx":13,"sur":false,"inSub":true},
+{"c":"Americas","city":"Washington DC IV","code":"","vpn":"was4-vpn.zscaler.net","gre":"170.85.86.20","host":"was4.sme.zscaler.net","pfx":12,"sur":false,"inSub":false},
+{"c":"APAC","city":"Auckland II","code":"AKL2","vpn":"akl2-vpn.zscaler.net","gre":"147.161.216.12","host":"akl2.sme.zscaler.net","pfx":5,"sur":true,"inSub":true},
+{"c":"APAC","city":"Beijing","code":"","vpn":"bjs1-vpn.zscaler.net","gre":"211.144.19.12","host":"bjs1.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"APAC","city":"Beijing III","code":"BJS3","vpn":"bjs3-vpn.zscaler.net","gre":"220.243.154.12","host":"bjs3.sme.zscaler.net","pfx":1,"sur":true,"inSub":true},
+{"c":"APAC","city":"Canberra I","code":"CBR1","vpn":"cbr1-vpn.zscaler.net","gre":"147.161.218.12","host":"cbr1.sme.zscaler.net","pfx":2,"sur":true,"inSub":true},
+{"c":"APAC","city":"Chennai","code":"","vpn":"maa1-vpn.zscaler.net","gre":"165.225.104.32","host":"maa1.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"APAC","city":"Chennai II","code":"MAA2","vpn":"maa2-vpn.zscaler.net","gre":"165.225.122.12","host":"maa2.sme.zscaler.net","pfx":11,"sur":true,"inSub":true},
+{"c":"APAC","city":"Chennai III","code":"","vpn":"maa3-vpn.zscaler.net","gre":"167.103.70.20","host":"maa3.sme.zscaler.net","pfx":10,"sur":true,"inSub":false},
+{"c":"APAC","city":"Hong Kong III","code":"HKG3","vpn":"hkg3-vpn.zscaler.net","gre":"165.225.116.8","host":"hkg3.sme.zscaler.net","pfx":6,"sur":false,"inSub":true},
+{"c":"APAC","city":"Hong Kong IV","code":"","vpn":"","gre":"","host":"","pfx":6,"sur":false,"inSub":false},
+{"c":"APAC","city":"Hyderabad I","code":"HYD1","vpn":"hyd1-vpn.zscaler.net","gre":"167.103.18.20","host":"hyd1.sme.zscaler.net","pfx":9,"sur":true,"inSub":true},
+{"c":"APAC","city":"Jakarta I","code":"","vpn":"","gre":"","host":"","pfx":2,"sur":false,"inSub":false},
+{"c":"APAC","city":"Kolkata I","code":"","vpn":"ccu1-vpn.zscaler.net","gre":"205.220.16.20","host":"ccu1.sme.zscaler.net","pfx":6,"sur":true,"inSub":false},
+{"c":"APAC","city":"Kuala Lumpur I","code":"","vpn":"kul1-vpn.zscaler.net","gre":"112.137.170.10","host":"kul1.sme.zscaler.net","pfx":1,"sur":false,"inSub":false},
+{"c":"APAC","city":"Kuala Lumpur II","code":"","vpn":"kul2-vpn.zscaler.net","gre":"205.220.70.20","host":"kul2.sme.zscaler.net","pfx":7,"sur":false,"inSub":false},
+{"c":"APAC","city":"Melbourne II","code":"MEL2","vpn":"mel2-vpn.zscaler.net","gre":"165.225.226.12","host":"mel2.sme.zscaler.net","pfx":7,"sur":false,"inSub":true},
+{"c":"APAC","city":"Mumbai IV","code":"","vpn":"bom4-vpn.zscaler.net","gre":"165.225.106.32","host":"bom4.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"APAC","city":"Mumbai VI","code":"BOM6","vpn":"bom6-vpn.zscaler.net","gre":"165.225.120.12","host":"bom6.sme.zscaler.net","pfx":12,"sur":true,"inSub":true},
+{"c":"APAC","city":"Mumbai VII","code":"","vpn":"bom7-vpn.zscaler.net","gre":"167.103.132.20","host":"bom7.sme.zscaler.net","pfx":10,"sur":true,"inSub":false},
+{"c":"APAC","city":"New Delhi I","code":"DEL1","vpn":"del1-vpn.zscaler.net","gre":"165.225.124.12","host":"del1.sme.zscaler.net","pfx":9,"sur":true,"inSub":true},
+{"c":"APAC","city":"Osaka I","code":"OSA1","vpn":"osa1-vpn.zscaler.net","gre":"147.161.192.12","host":"osa1.sme.zscaler.net","pfx":10,"sur":false,"inSub":true},
+{"c":"APAC","city":"Perth I","code":"PER1","vpn":"per1-vpn.zscaler.net","gre":"167.103.98.20","host":"per1.sme.zscaler.net","pfx":6,"sur":true,"inSub":true},
+{"c":"APAC","city":"Seoul I","code":"SEL1","vpn":"sel1-vpn.zscaler.net","gre":"165.225.228.12","host":"sel1.sme.zscaler.net","pfx":4,"sur":false,"inSub":true},
+{"c":"APAC","city":"Shanghai","code":"","vpn":"sha1-vpn.zscaler.net","gre":"58.220.95.8","host":"sha1.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"APAC","city":"Shanghai II","code":"SHA2","vpn":"sha2-vpn.zscaler.net","gre":"140.210.152.12","host":"sha2.sme.zscaler.net","pfx":2,"sur":true,"inSub":true},
+{"c":"APAC","city":"Singapore IV","code":"SIN4","vpn":"sin4-vpn.zscaler.net","gre":"165.225.112.8","host":"sin4.sme.zscaler.net","pfx":9,"sur":false,"inSub":true},
+{"c":"APAC","city":"Singapore V","code":"","vpn":"sin5-vpn.zscaler.net","gre":"167.103.60.20","host":"sin5.sme.zscaler.net","pfx":8,"sur":false,"inSub":false},
+{"c":"APAC","city":"Sydney III","code":"SYD3","vpn":"syd3-vpn.zscaler.net","gre":"165.225.114.8","host":"syd3.sme.zscaler.net","pfx":10,"sur":false,"inSub":true},
+{"c":"APAC","city":"Sydney V","code":"","vpn":"syd5-vpn.zscaler.net","gre":"101.2.224.20","host":"syd5.sme.zscaler.net","pfx":10,"sur":false,"inSub":false},
+{"c":"APAC","city":"Taipei","code":"TPE2","vpn":"tpe2-vpn.zscaler.net","gre":"165.225.102.32","host":"tpe2.sme.zscaler.net","pfx":6,"sur":false,"inSub":true},
+{"c":"APAC","city":"Tianjin","code":"","vpn":"tsn1-vpn.zscaler.net","gre":"221.122.91.32","host":"tsn1.sme.zscaler.net","pfx":1,"sur":true,"inSub":false},
+{"c":"APAC","city":"Tokyo IV","code":"TYO4","vpn":"tyo4-vpn.zscaler.net","gre":"165.225.110.8","host":"tyo4.sme.zscaler.net","pfx":15,"sur":false,"inSub":true},
+{"c":"APAC","city":"Tokyo V","code":"","vpn":"tyo5-vpn.zscaler.net","gre":"167.103.8.20","host":"tyo5.sme.zscaler.net","pfx":12,"sur":false,"inSub":false}
+];
+
+const CF = {EMEA:'🌍', Americas:'🌎', APAC:'🌏'};
+
+// ── HAR / LIVE API / PASTE LOGIC ──────────────────────────────────────────────
+function toggleHarPanel(e) {
+  e.preventDefault();
+  document.getElementById('har-panel').classList.toggle('visible');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('har-drop').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const har = JSON.parse(ev.target.result);
+      const entries = har.log?.entries || [];
+      let subclouds = null;
+
+      // 1️⃣ Try to find /subclouds response directly in HAR
+      for (const entry of entries) {
+        const url = entry.request?.url || '';
+        if (url.includes('/subclouds')) {
+          const body = entry.response?.content?.text || '';
+          try { subclouds = JSON.parse(body); } catch {}
+          if (subclouds && subclouds[0]?.dcs) break;
+        }
+      }
+
+      if (subclouds && subclouds[0]?.dcs) {
+        applySubcloudData(subclouds, 'har');
+        return;
+      }
+
+      // 2️⃣ Not in HAR — show warning and attempt live API call
+      showHarStatus('warn', T[lang].har_err);
+      await tryLiveApi();
+
+    } catch(err) {
+      showHarStatus('err', T[lang].har_err + ' (' + err.message + ')');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 🔴 Live API call using browser's active session (credentials:include)
+async function tryLiveApi() {
+  const btn = document.getElementById('btn-live');
+  btn.disabled = true;
+  showHarStatus('info', T[lang].hp_live_trying);
+  hideCorsHelp();
+
+  const url = `https://admin.zscaler.net/zsapi/v1/subclouds?timestamp=${Date.now()}`;
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+    const data = await resp.json();
+    if (!data || !data[0]?.dcs) throw new Error('Unexpected response shape');
+    applySubcloudData(data, 'live');
+  } catch(err) {
+    const isCors = err instanceof TypeError && err.message.toLowerCase().includes('fetch');
+    if (isCors || err.message === 'Failed to fetch') {
+      showHarStatus('warn', T[lang].har_err_cors);
+    } else {
+      showHarStatus('err', T[lang].har_err_live + ' (' + err.message + ')');
+    }
+    showCorsHelp();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// 📋 Apply pasted JSON (top paste box)
+function applyPastedJson() {
+  const raw = document.getElementById('paste-area').value.trim();
+  parsePastedJson(raw);
+}
+
+// 📋 Apply pasted JSON (bottom always-visible paste box)
+function applyPastedJson2() {
+  const raw = document.getElementById('paste-area2').value.trim();
+  parsePastedJson(raw);
+}
+
+function parsePastedJson(raw) {
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    const arr = Array.isArray(data) ? data : [data];
+    if (!arr[0]?.dcs) throw new Error('Missing "dcs" array');
+    applySubcloudData(arr, 'paste');
+  } catch(err) {
+    showHarStatus('err', T[lang].har_err_json + ' (' + err.message + ')');
+  }
+}
+
+// ✅ Common: apply subcloud data from any source
+function applySubcloudData(subclouds, source) {
+  const sc = subclouds[0];
+  const codes = new Set(sc.dcs.map(d => d.name.toUpperCase()));
+  const excl  = new Set((sc.exclusions||[]).filter(x=>!x.expired).map(x=>x.datacenter?.name?.toUpperCase()).filter(Boolean));
+
+  DCS.forEach(dc => {
+    if (dc.code) {
+      dc.inSub = codes.has(dc.code.toUpperCase());
+      dc.excluded = excl.has(dc.code.toUpperCase());
+    }
+  });
+
+  const inCount = DCS.filter(d=>d.inSub).length;
+  document.getElementById('h-title').textContent = `Subcloud ${sc.name} — ${inCount} / ${DCS.length} Data Centers`;
+
+  renderTable(); renderStats();
+
+  const srcLabel = source === 'live' ? T[lang].har_ok_live : T[lang].har_ok;
+  showHarStatus('ok', `${srcLabel} <strong>${sc.name}</strong> · ${inCount} DCs`);
+  hideCorsHelp();
+}
+
+function showHarStatus(type, msg) {
+  const el = document.getElementById('har-status');
+  const map = {ok:'har-ok', err:'har-err', info:'har-info', warn:'har-warn'};
+  el.className = 'har-status ' + (map[type] || 'har-err');
+  el.innerHTML = msg;
+  el.style.display = 'block';
+}
+
+function showCorsHelp() {
+  const el = document.getElementById('cors-help');
+  el.classList.add('visible');
+}
+function hideCorsHelp() {
+  document.getElementById('cors-help').classList.remove('visible');
+}
+
+// ── CENR LIVE CHECK ───────────────────────────────────────────────────────────
+const CENR_URL = 'https://config.zscaler.com/zscaler.net/cenr';
+
+// Extract DC short code from vpn or hostname string
+function extractCode(s) {
+  if (!s) return '';
+  let part = s.split('-vpn.')[0].split('.sme.')[0];
+  part = part.replace(/-[2-9]$/, ''); // strip trailing -2, -3, etc.
+  return part.toUpperCase();
+}
+
+// Infer Regional Surcharge from continent/city name
+function inferSurcharge(continent, city) {
+  const c = city.toLowerCase();
+  const surchargeKeywords = ['india','mumbai','delhi','hyderabad','chennai','kolkata','bangalore',
+    'china','beijing','shanghai','shenzhen','hong kong','tianjin',
+    'africa','johannesburg','lagos','capetown','cape town','nairobi',
+    'dubai','abu dhabi','riyadh','saudi','doha','bahrain','kuwait','tel aviv',
+    'bogota','buenos aires','santiago','lima','quito','caracas',
+    'auckland','perth','canberra'];
+  return surchargeKeywords.some(kw => c.includes(kw));
+}
+
+async function checkCENR(showPanel) {
+  const t = T[lang];
+  setCENRLoading(true);
+  if (showPanel) {
+    document.getElementById('cenr-panel').classList.add('visible');
+  }
+  setCENRMsg('info', t.cp_checking);
+
+  try {
+    const resp = await fetch(CENR_URL, { method: 'GET' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    processCENRData(data, showPanel);
+  } catch(err) {
+    const isCors = err instanceof TypeError;
+    if (isCors) {
+      setCENRMsg('warn', t.cp_err_cors);
+      setCENRDot('warn');
+    } else {
+      setCENRMsg('err', t.cp_err_net + ' (' + err.message + ')');
+      setCENRDot('err');
+    }
+    if (showPanel) document.getElementById('cenr-panel').classList.add('visible');
+  } finally {
+    setCENRLoading(false);
+  }
+}
+
+function processCENRData(data, showPanel) {
+  const t = T[lang];
+  const cloud = data['zscaler.net'];
+  if (!cloud) { setCENRMsg('err', '❌ Unexpected CENR format'); return; }
+
+  // Parse all DCs from CENR
+  const cenrMap = new Map(); // city → {continent, pfx, vpn, gre, host, code}
+  for (const [contKey, cities] of Object.entries(cloud)) {
+    const continent = contKey.replace('continent : ', '').trim();
+    if (!['EMEA','Americas','APAC'].includes(continent)) continue;
+    for (const [cityKey, ranges] of Object.entries(cities)) {
+      const city = cityKey.replace('city : ', '').trim();
+      let vpn = '', gre = '', host = '';
+      for (const r of (Array.isArray(ranges) ? ranges : [])) {
+        if (!vpn && r.vpn) vpn = r.vpn;
+        if (!gre && r.gre) gre = r.gre;
+        if (!host && r.hostname) host = r.hostname;
+      }
+      const pfx = Array.isArray(ranges) ? ranges.length : 0;
+      const code = extractCode(vpn || host);
+      cenrMap.set(city, { continent, pfx, vpn, gre, host, code });
+    }
+  }
+
+  // Find new DCs (in CENR but not in our DCS array)
+  const ourCities = new Set(DCS.map(d => d.city));
+  const newDCs = [];
+  for (const [city, info] of cenrMap) {
+    if (!ourCities.has(city)) {
+      newDCs.push({ city, ...info });
+    }
+  }
+
+  // Find removed DCs (in our DCS array but not in CENR)
+  const cenrCities = new Set(cenrMap.keys());
+  const removedDCs = DCS.filter(d => d.city && !cenrCities.has(d.city));
+
+  // Update existing DCs with fresh pfx counts, vpn, gre, host from CENR
+  let pfxUpdated = 0;
+  DCS.forEach(dc => {
+    const cenr = cenrMap.get(dc.city);
+    if (cenr) {
+      if (dc.pfx !== cenr.pfx || (!dc.vpn && cenr.vpn)) {
+        if (!dc.vpn && cenr.vpn) dc.vpn = cenr.vpn;
+        if (!dc.gre && cenr.gre) dc.gre = cenr.gre;
+        if (!dc.host && cenr.host) dc.host = cenr.host;
+        if (!dc.code && cenr.code) dc.code = cenr.code;
+        dc.pfx = cenr.pfx;
+        pfxUpdated++;
+      }
+    }
+  });
+
+  // Add new DCs to DCS array
+  newDCs.forEach(dc => {
+    DCS.push({
+      c: dc.continent,
+      city: dc.city,
+      code: dc.code,
+      vpn: dc.vpn,
+      gre: dc.gre,
+      host: dc.host,
+      pfx: dc.pfx,
+      sur: inferSurcharge(dc.continent, dc.city),
+      inSub: false,
+      isNew: true
+    });
+  });
+
+  // Mark removed DCs
+  removedDCs.forEach(dc => { dc.isRemoved = true; });
+
+  const hasChanges = newDCs.length > 0 || removedDCs.length > 0;
+
+  if (hasChanges) {
+    setCENRMsg('warn', `${t.cp_ok_changes} ${newDCs.length} ${t.cp_new_hdr.replace('🆕 ','')} · ${removedDCs.length} ${t.cp_rem_hdr.replace('🗑 ','')} · ${pfxUpdated} ${t.cp_pfx_updated}`);
+    setCENRDot('warn');
+    showCENRDiff(newDCs, removedDCs);
+    if (showPanel) document.getElementById('cenr-panel').classList.add('visible');
+  } else {
+    setCENRMsg('ok', `${t.cp_ok_nochange}${cenrMap.size} ${t.cp_dcs} · ${pfxUpdated} ${t.cp_pfx_updated}`);
+    setCENRDot('ok');
+    if (showPanel) document.getElementById('cenr-panel').classList.add('visible');
+  }
+
+  renderTable(); renderStats();
+}
+
+function showCENRDiff(newDCs, removedDCs) {
+  const t = T[lang];
+  document.getElementById('cenr-diff').style.display = 'flex';
+  document.getElementById('cp-new-hdr').textContent = t.cp_new_hdr;
+  document.getElementById('cp-rem-hdr').textContent = t.cp_rem_hdr;
+
+  const newList = document.getElementById('cenr-new-list');
+  newList.innerHTML = newDCs.length === 0
+    ? '<li style="color:#334155">—</li>'
+    : newDCs.map(d => `<li class="tag-new">✦ ${d.city}${d.code ? ' <span style="font-family:monospace;color:#fbbf24">[${d.code}]</span>' : ''} <span style="color:#334155">(${d.continent})</span></li>`).join('');
+
+  const remList = document.getElementById('cenr-rem-list');
+  remList.innerHTML = removedDCs.length === 0
+    ? '<li style="color:#334155">—</li>'
+    : removedDCs.map(d => `<li class="tag-rem">✦ ${d.city}${d.code ? ' <span style="font-family:monospace;color:#fbbf24">[${d.code}]</span>' : ''}</li>`).join('');
+}
+
+function setCENRMsg(type, html) {
+  const map = {ok:'cenr-ok', warn:'cenr-warn', err:'cenr-err', info:'cenr-warn'};
+  document.getElementById('cenr-msg').innerHTML = `<div class="${map[type]||'cenr-warn'}">${html}</div>`;
+}
+
+function setCENRDot(state) {
+  const dot = document.getElementById('cenr-dot');
+  dot.style.display = 'inline-block';
+  dot.className = 'cenr-dot dot-' + state;
+}
+
+function setCENRLoading(loading) {
+  const btn = document.getElementById('btn-cenr');
+  const icon = document.getElementById('cenr-spin-icon');
+  const dot  = document.getElementById('cenr-dot');
+  btn.disabled = loading;
+  icon.style.animation = loading ? 'spin .8s linear infinite' : '';
+  if (loading) {
+    dot.style.display = 'inline-block';
+    dot.className = 'cenr-dot dot-spin';
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderAll() {
+  const t = T[lang];
+  document.getElementById('h-title').textContent = t.title;
+  document.getElementById('h-sub').textContent = t.sub;
+  document.getElementById('n1').textContent = t.note_strong;
+  document.getElementById('n2').innerHTML = t.note_body;
+  document.getElementById('lbl-filter').textContent = t.lbl_filter;
+  ['all','eme','ame','apa','sub','out','sur'].forEach(k => {
+    document.getElementById('b-'+k).textContent = t['b_'+k];
+  });
+  document.getElementById('srch').placeholder = t.srch_ph;
+  ['dc','cont','host','gre','pfx','status'].forEach(k => {
+    document.getElementById('th-'+k).textContent = t['th_'+k];
+  });
+  document.getElementById('lang-btn').textContent = t.lang_btn;
+  document.getElementById('har-btn-lbl').textContent = t.har_btn;
+  document.getElementById('hp-title').textContent = t.hp_title;
+  document.getElementById('hp-desc').innerHTML = t.hp_desc;
+  document.getElementById('hp-drop').textContent = t.hp_drop;
+  document.getElementById('hp-or1').textContent = t.hp_or1;
+  document.getElementById('hp-or2').textContent = t.hp_or2;
+  document.getElementById('hp-live-lbl').textContent = t.hp_live_lbl;
+  document.getElementById('hp-paste-btn').textContent = t.hp_paste_btn;
+  document.getElementById('hp-paste-btn2').textContent = t.hp_paste_btn2;
+  document.getElementById('hp-paste-hint').innerHTML = t.hp_paste_hint + ' <code style="color:#fbbf24">/zsapi/v1/subclouds</code>:';
+  document.getElementById('ch-alt').textContent = t.cors_alt;
+  document.getElementById('ch-steps').innerHTML = t.cors_steps;
+  document.getElementById('cenr-btn-lbl').textContent = t.cenr_btn;
+  document.getElementById('cp-title').textContent = t.cp_title;
+  if (document.getElementById('cp-new-hdr')) document.getElementById('cp-new-hdr').textContent = t.cp_new_hdr;
+  if (document.getElementById('cp-rem-hdr')) document.getElementById('cp-rem-hdr').textContent = t.cp_rem_hdr;
+  document.getElementById('gdate').textContent = t.gen+' '+new Date().toLocaleString(lang==='es'?'es-ES':'en-GB');
+  renderTable(); renderStats();
+}
+
+function renderTable() {
+  const t = T[lang];
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  DCS.forEach((d, i) => {
+    const tr = document.createElement('tr');
+    tr.dataset.cont = d.c;
+    tr.dataset.sub  = d.inSub ? 'in' : 'out';
+    tr.dataset.sur  = d.sur ? '1' : '0';
+    tr.dataset.q    = (d.city+' '+d.code+' '+d.host+' '+d.gre).toLowerCase();
+
+    const isExcl = EXCLUSIONS.has(d.code) || d.excluded;
+    const subStatus = d.isNew
+      ? `<span class="s-out">${t.out_sub}</span>`
+      : (d.inSub ? `<span class="s-in">${t.in_sub}</span>` : `<span class="s-out">${t.out_sub}</span>`);
+    const statusHTML =
+      subStatus +
+      (d.sur      ? ` <span class="s-sur">${t.surcharge}</span>` : '') +
+      (isExcl     ? ` <span class="excl">${t.excl}</span>` : '') +
+      (d.isNew    ? ` <span class="s-new">🆕 ${lang==='es'?'Nuevo':'New'}</span>` : '') +
+      (d.isRemoved? ` <span class="s-rem">⚠️ ${lang==='es'?'Eliminado':'Removed'}</span>` : '');
+
+    const codeHTML = d.code ? `<span class="dc-code">${d.code}</span>` : '';
+
+    tr.innerHTML = `
+      <td class="num">${i+1}</td>
+      <td><span class="city-name">${d.city}</span>${codeHTML}</td>
+      <td><span class="rb rb-${d.c}">${CF[d.c]||''} ${d.c}</span></td>
+      <td>${d.host ? `<span class="host">${d.host}</span>` : '<span class="dash">—</span>'}</td>
+      <td>${d.gre  ? `<span class="gre">${d.gre}</span>`   : '<span class="dash">—</span>'}</td>
+      <td><span class="cnt">${d.pfx}</span></td>
+      <td>${statusHTML}</td>`;
+    tbody.appendChild(tr);
+  });
+  applyFilters();
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+let curFilt='all', curSearch='';
+function filt(f, btn) {
+  curFilt = f;
+  document.querySelectorAll('button.fb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function doSearch() {
+  curSearch = document.getElementById('srch').value.toLowerCase();
+  applyFilters();
+}
+function applyFilters() {
+  let vis = 0;
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    const ok =
+      (curFilt==='all'      ||
+       curFilt==='insub'    && tr.dataset.sub==='in'  ||
+       curFilt==='outsub'   && tr.dataset.sub==='out' ||
+       curFilt==='surcharge'&& tr.dataset.sur==='1'   ||
+       tr.dataset.cont===curFilt)
+      && (curSearch==='' || tr.dataset.q.includes(curSearch));
+    tr.classList.toggle('hidden', !ok);
+    if (ok) vis++;
+  });
+  renderStats(vis);
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats(vis) {
+  const t = T[lang];
+  const inS  = DCS.filter(d=>d.inSub).length;
+  const outS = DCS.filter(d=>!d.inSub).length;
+  const surN = DCS.filter(d=>d.sur).length;
+  const show = vis !== undefined ? vis : DCS.length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="sc"><div class="lbl">${t.s_total}</div><div class="val c-bl">${show}</div></div>
+    <div class="sc"><div class="lbl">${t.s_in}</div><div class="val c-gr">${inS}</div></div>
+    <div class="sc"><div class="lbl">${t.s_out}</div><div class="val c-re">${outS}</div></div>
+    <div class="sc"><div class="lbl">${t.s_sur}</div><div class="val c-or">${surN}</div></div>
+    <div class="sc"><div class="lbl">${t.s_eme}</div><div class="val c-gr">${DCS.filter(d=>d.c==='EMEA').length}</div></div>
+    <div class="sc"><div class="lbl">${t.s_ame}</div><div class="val c-bl">${DCS.filter(d=>d.c==='Americas').length}</div></div>
+    <div class="sc"><div class="lbl">${t.s_apa}</div><div class="val c-pu">${DCS.filter(d=>d.c==='APAC').length}</div></div>`;
+}
+
+function toggleLang() { lang = lang==='es'?'en':'es'; renderAll(); }
+
+// Auto-check CENR on load (silent — no panel, just updates data and dot)
+renderAll();
+// Slight delay so the initial render completes first
+setTimeout(() => checkCENR(false), 800);
+</script>
+</body>
+</html>
